@@ -7,7 +7,9 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 
+import it.polito.tdp.extflightdelays.model.Adiacenza;
 import it.polito.tdp.extflightdelays.model.Airline;
 import it.polito.tdp.extflightdelays.model.Airport;
 import it.polito.tdp.extflightdelays.model.Flight;
@@ -37,9 +39,8 @@ public class ExtFlightDelaysDAO {
 		}
 	}
 
-	public List<Airport> loadAllAirports() {
+	public void loadAllAirports(Map<Integer, Airport> map) { //passo l'idMap (inizialmente vuota) e chiedo al DAO di riempirmela
 		String sql = "SELECT * FROM airports";
-		List<Airport> result = new ArrayList<Airport>();
 
 		try {
 			Connection conn = ConnectDB.getConnection();
@@ -47,14 +48,16 @@ public class ExtFlightDelaysDAO {
 			ResultSet rs = st.executeQuery();
 
 			while (rs.next()) {
-				Airport airport = new Airport(rs.getInt("ID"), rs.getString("IATA_CODE"), rs.getString("AIRPORT"),
-						rs.getString("CITY"), rs.getString("STATE"), rs.getString("COUNTRY"), rs.getDouble("LATITUDE"),
-						rs.getDouble("LONGITUDE"), rs.getDouble("TIMEZONE_OFFSET"));
-				result.add(airport);
+				
+				if(!map.containsKey(rs.getInt("ID"))) {
+					Airport airport = new Airport(rs.getInt("ID"), rs.getString("IATA_CODE"), rs.getString("AIRPORT"),
+							rs.getString("CITY"), rs.getString("STATE"), rs.getString("COUNTRY"), rs.getDouble("LATITUDE"),
+							rs.getDouble("LONGITUDE"), rs.getDouble("TIMEZONE_OFFSET"));
+					map.put(airport.getId(), airport);
+				}
 			}
 
 			conn.close();
-			return result;
 
 		} catch (SQLException e) {
 			e.printStackTrace();
@@ -90,5 +93,34 @@ public class ExtFlightDelaysDAO {
 			System.out.println("Errore connessione al database");
 			throw new RuntimeException("Error Connection Database");
 		}
+	}
+	
+	public List<Adiacenza> getAdiacenze(Map<Integer, Airport> map) {
+		String sql= "SELECT f.origin_airport_id,  f.destination_airport_id, COUNT(*) AS voliTot, SUM(DISTANCE) AS distanzaTot, AVG(DISTANCE) AS dist_media "+
+				    "from flights AS f "+
+				    "GROUP BY f.origin_airport_id,  f.destination_airport_id";
+		List<Adiacenza> risultato = new ArrayList<>();
+		try {
+			Connection conn = ConnectDB.getConnection();
+			PreparedStatement st = conn.prepareStatement(sql);
+			ResultSet rs = st.executeQuery();
+			
+			while(rs.next()) {
+				
+				
+				Adiacenza a= new Adiacenza(map.get(rs.getInt("origin_airport_id")), map.get(rs.getInt("destination_airport_id")), 
+						rs.getInt("voliTot"), rs.getInt("distanzaTot"), rs.getInt("dist_media"));
+				risultato.add(a);
+			}
+			
+			conn.close();
+			
+		}catch (SQLException e) {
+			e.printStackTrace();
+			System.out.println("Errore connessione al database");
+			throw new RuntimeException("Error Connection Database");
+		}
+		
+		return risultato;
 	}
 }

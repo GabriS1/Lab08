@@ -35,6 +35,19 @@ public class FXMLController {
 
     @FXML
     void doAnalizzaAeroporti(ActionEvent event) {
+    	this.txtResult.clear();
+    	String ts = distanzaMinima.getText();
+    	int i;
+    	try {
+    		i = Integer.parseInt(ts);
+    	} catch (NumberFormatException e) {
+    		txtResult.appendText("Devi inserire un numero!\n");
+    		return;
+    	}
+    	this.model.creaGrafo(i);
+    	this.txtResult.appendText("Numero vertici: "+model.nVertici()+"\n");
+    	this.txtResult.appendText("Numero archi :"+model.nEdges());
+    	
     	//TODO
     }
 
